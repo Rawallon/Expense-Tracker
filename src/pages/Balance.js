@@ -1,55 +1,52 @@
 import React, { useState } from 'react';
-import { Transition, animated } from 'react-spring/renderprops'
+import { animated, useTransition } from 'react-spring'
 
 import IncExpDisplay from '../components/IncExpDisplay';
 
-
-
-
 function Balance() {
-  const [form, setForm] = useState({ text: '', amount: 0 })
+  //Form Stuff
+  const [form, setForm] = useState({ text: '', description: '', amount: 0 })
   const addExpense = e => {
     e.preventDefault();
     if (form.text && form.amount) {
-      setTransactions([...transactions, { id: transactions.length + 1, text: form.text, amount: Number(form.amount) }])
-      setForm({ text: '', amount: 0 })
+      setTransactions([...transactions, { id: transactions.length + 1, text: form.text, description: form.description, amount: Number(form.amount) }])
+      setForm({ text: '', description: "", amount: 0 })
     }
   }
+  //
+  // \/ This shouldn't be here, I'll keep it while it doesn't have back end
   const [transactions, setTransactions] = useState([
-    { id: 1, text: "Flores", amount: -20 },
-    { id: 2, text: "Salario", amount: 300 },
-    { id: 3, text: "Livros", amount: -25 },
-    { id: 4, text: "Cursos", amount: 150 },
+    { id: 1, text: "Flowers", description: "Good smelling", amount: -20 },
+    { id: 2, text: "Salary", description: "", amount: 300 },
+    { id: 3, text: "Books", description: "'twas gud!", amount: -25 },
+    { id: 4, text: "Chocolate", description: "Meh!", amount: 150 },
   ]);
   let pos = transactions.filter(el => el.amount > 0).reduce((acc, el) => acc + el.amount, 0);
   let neg = transactions.filter(el => el.amount < 0).reduce((acc, el) => acc + el.amount, 0);
   let total = pos + neg;
+  //
 
+  //Animation
+  const trans = useTransition(transactions, item => item.id, {
+    from: { transform: 'translate3d(0,-30px,0)', opacity: 0 },
+    enter: { transform: 'translate3d(0,0px,0)', opacity: 1 },
+    leave: { transform: 'translate3d(0,-500%,0)', opacity: 0 },
+  })
   return (
     <div>
       <h2>Expenses Tracker</h2>
       <div className="container">
-        <IncExpDisplay total={total} pos={pos} neg={neg} />
+        <IncExpDisplay total={total} pos={pos} neg={neg} show={true} />
         <h3>History</h3>
         <ul id="list" className="list" >
-          {transactions.map(el =>
-            <Transition
-              items={el}
-            config={{ tension: 2000, friction: 100, precision: 1 }}
-              from={{ height: 0, opacity: 0 }}
-              enter={{ height: 35, opacity: 1 }}>
-              {item => styles => (
-                <animated.li className={item.amount < 0 ? 'minus' : 'plus'} key={item.id}  onClick={() => { setTransactions(transactions.filter(filter => filter.id !== item.id)) }} style={{ ...styles }}>
-                  {item.text} <span>{item.amount < 0 && '-'} ${Math.abs(item.amount)}</span>
-                </animated.li>
-
-              )}
-
-            </Transition>
-
-          )}
+          { //Maybe make this its own component?
+            trans.map(({ item, key, props }) => item && <animated.li className={item.amount < 0 ? 'minus' : 'plus'} key={key} onClick={() => { setTransactions(transactions.filter(filter => filter.id !== item.id)) }} style={props}>
+              <div className='data'>{item.text} <span>{item.amount < 0 && '-'} ${Math.abs(item.amount)}</span></div>
+              {item.description !== "" ? <div className='desc'>{item.description}</div> : ""}
+            </animated.li>
+            )
+          }
         </ul>
-
         <h3>Add new transaction</h3>
         <form id="form" onSubmit={addExpense}>
           <div className="form-control">
@@ -62,6 +59,8 @@ function Balance() {
                   (negative - expense, positive - income)
                 </label>
             <input type="number" id="amount" value={form['amount']} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="Enter amount..." />
+            <label htmlFor="desc">Description </label>
+            <textarea id="desc" rows='5' value={form['description']} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Enter description..." />
           </div>
           <button className="btn" >Add transaction</button>
         </form>
